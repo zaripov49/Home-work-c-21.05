@@ -1,6 +1,7 @@
 using System.Net;
 using Dapper;
 using Domain.ApiResponse;
+using Domain.DTOS;
 using Domain.Entities;
 using Infrastructure.Data;
 using Infrastructure.Interfaces;
@@ -85,6 +86,21 @@ public class CourseService(DataContext context) : ICourseService
                 return new Response<string>("Some thing went wrong", HttpStatusCode.InternalServerError);
             }
             return new Response<string>(null, "Courses successfully deleted");
+        }
+    }
+
+    public async Task<Response<List<CourseDTO>>> GetStudentsPerCourse()
+    {
+        using (var connection = await context.GetConnectionAsync())
+        {
+            connection.Open();
+
+            string cmd = @"Select c.id, c.title, count(sg.studentId)
+                        from Courses as c
+                        Join studentGroups as sg on c.id = sg.groupId
+                        Group by c.id, c.groupName";
+            var result = await connection.QueryAsync<CourseDTO>(cmd);
+            return new Response<List<CourseDTO>>(result.ToList(), "Success");
         }
     }
 }

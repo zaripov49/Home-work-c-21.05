@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Dapper;
 using Domain.ApiResponse;
+using Domain.DTOS;
 using Infrastructure.Data;
 using Infrastructure.Interfaces;
 
@@ -85,6 +86,37 @@ public class GroupService(DataContext context) : IGroupService
                 return new Response<string>("Some thing went wrong", HttpStatusCode.InternalServerError);
             }
             return new Response<string>(null, "Groups successfully deleted");
+        }
+    }
+
+    public async Task<Response<List<GroupDTO>>> GetStudentsPerGroup()
+    {
+        using (var connection = await context.GetConnectionAsync())
+        {
+            connection.Open();
+
+            string cmd = @"Select g.id, g.groupName, count(sg.studentId)
+                        from Groups as g
+                        Join studentGroups as sg on g.id = sg.groupId
+                        Group by g.id, g.groupName";
+            var result = await connection.QueryAsync<GroupDTO>(cmd);
+            return new Response<List<GroupDTO>>(result.ToList(), "Success");
+        }
+    }
+
+    public async Task<Response<List<GroupDTO>>> GetEmptyGroups()
+    {
+        using (var connection = await context.GetConnectionAsync())
+        {
+            connection.Open();
+
+            string cmd = @"Select g.id, g.groupName, count(sg.studentId) as countStudent
+                        from Groups as g
+                        left Join studentGroups as sg on g.id = sg.groupId
+                        Group by g.id, g.groupName
+						having countStudent = 0";
+            var result = await connection.QueryAsync<GroupDTO>(cmd);
+            return new Response<List<GroupDTO>>(result.ToList(), "Success");
         }
     }
 }

@@ -12,6 +12,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddScoped<DataContext, DataContext>();
 builder.Services.AddScoped<StudentService, StudentService>();
+builder.Services.AddScoped<CourseService, CourseService>();
+builder.Services.AddScoped<MentorService, MentorService>();
+builder.Services.AddScoped<GroupService, GroupService>();
+builder.Services.AddScoped<StudentGroupService, StudentGroupService>();
+builder.Services.AddScoped<StatisticsService, StatisticsService>();
 
 var app = builder.Build();
 
