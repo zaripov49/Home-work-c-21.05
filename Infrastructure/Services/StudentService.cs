@@ -8,17 +8,42 @@ using Infrastructure.Interfaces;
 
 namespace Infrastructure.Services;
 
-public class StudentService(DataContext context) : IStudentService
+public class StudentService(DataContext context, IWebHostEnvironment webHostEnvironment) : IStudentService
 {
     public async Task<Response<string>> CreateStudentAsync(Student student)
     {
+        var wwwRootPath = webHostEnvironment.WebRootPath;
+        var folderPath = Path.Combine(wwwRootPath, "StudentImages");
+        var fileName = student.Photo.FileName;
+
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+
+        var fullPath = Path.Combine(folderPath, fileName);
+
+
         using (var connection = await context.GetConnectionAsync())
         {
-            connection.Open();
+            await using (var stream = File.Create(fullPath))
+            {
+                await student.Photo.CopyToAsync(stream);
+            }
 
             string cmd = @"INSERT INTO Students (FullName, Email, Phone, EnrollmentDate)
                             VALUES (@FullName, @Email, @Phone, @EnrollmentDate)";
-            var result = await connection.ExecuteAsync(cmd, student);
+
+            var anonymousObject = new
+            {
+                fullName = student.FullName,
+                email = student.Email,
+                phone = student.Phone,
+                enrollmentDate = student.EnrollmentDate,
+                photo = student.Photo.FileName,
+            };
+
+            var result = await connection.ExecuteAsync(cmd, anonymousObject);
             if (result == 0)
             {
                 return new Response<string>("Some thing went wrong", HttpStatusCode.InternalServerError);
